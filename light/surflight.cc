@@ -221,6 +221,9 @@ std::optional<std::tuple<int32_t, int32_t, qvec3f, light_t *>> IsSurfaceLitFace(
         if (info != nullptr && (info->flags.native & Q2_SURF_LIGHT) && info->value > 0) {
             return std::make_tuple(info->value, 0, qvec3f(Face_LookupTextureColor(bsp, face)), nullptr);
         }
+#if 1 // KMOD
+        return std::nullopt;
+#endif
     }
 
     for (const auto &surflight : GetSurfaceLightTemplates()) {
@@ -253,10 +256,58 @@ static void MakeSurfaceLightsThread(const mbsp_t *bsp, const settings::worldspaw
                         "WARNING: surface light '{}' at [{}] has 0 intensity.\n", Face_TextureName(bsp, face), wc);
                 }
             } else {
-                MakeSurfaceLight(bsp, cfg, face, std::nullopt, !(info->flags.native & Q2_SURF_SKY),
-                    (info->flags.native & Q2_SURF_SKY), 0, info->value);
+#if 1 // KMOD
+                bool did_template = false;
+                const mtexinfo_t* info = Face_Texinfo(bsp, face);
+                if (info != nullptr) {
+                    // check matching templates
+                    for (const auto &surflight : GetSurfaceLightTemplates()) {
+                        if (FaceMatchesSurfaceLightTemplate(bsp, face, ModelInfoForFace(bsp, face - bsp->dfaces.data()),
+                                *surflight, SURFLIGHT_RAD)) {
+                            std::optional<qvec3f> texture_color;
+
+                            if (surflight->color.is_changed()) {
+                                texture_color = surflight->color.value();
+                            }
+
+                            float light_value = surflight->light.value();
+
+                            if (!surflight->epairs->has("_surface_usevalue")
+                                    ? false
+                                    : !!surflight->epairs->get_int("_surface_usevalue")) {
+                                light_value *= info->value;
+                                light_value /= 100;
+                            }
+
+                            bool is_directional = !(info->flags.native & Q2_SURF_SKY);
+                            if (surflight->epairs->has("_surface_spotlight")) {
+                                is_directional = !!surflight->epairs->get_int("_surface_spotlight");
+                            }
+                            bool is_sky = (info->flags.native & Q2_SURF_SKY);
+                            if (surflight->epairs->has("_surface_is_sky")) {
+                                is_sky = !!surflight->epairs->get_int("_surface_is_sky");
+                            }
+                            MakeSurfaceLight(bsp, cfg, face, texture_color, is_directional, is_sky,
+                                surflight->epairs->get_int("style"),
+                                light_value);
+
+                            did_template = true;
+                        }
+                    }
+                }
+                if (!did_template) {
+                    MakeSurfaceLight(bsp, cfg, face, std::nullopt, !(info->flags.native & Q2_SURF_SKY),
+                        (info->flags.native & Q2_SURF_SKY), 0, info->value);
+                }
+#else
+                // MakeSurfaceLight(bsp, cfg, face, std::nullopt, !(info->flags.native & Q2_SURF_SKY),
+                //     (info->flags.native & Q2_SURF_SKY), 0, info->value);
+#endif
             }
         }
+#if 1 // KMOD
+        return;
+#endif
     }
 
     // check matching templates

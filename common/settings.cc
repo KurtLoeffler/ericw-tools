@@ -741,8 +741,13 @@ common_settings::common_settings()
       q2rtx{this, "q2rtx", false, &game_group, "adjust settings to best support Q2RTX"},
       defaultpaths{this, "defaultpaths", true, &game_group,
           "whether the compiler should attempt to automatically derive game/base paths for games that support it"},
-      tex_saturation_boost{this, "tex_saturation_boost", 0.0f, 0.0f, 1.0f, &game_group,
+#if 1 // KMOD
+      tex_saturation_boost{this, "tex_saturation_boost", 0.0f, 0.0f, 10.0f, &game_group,
           "increase texture saturation to match original Q2 tools"}
+#else
+    //  tex_saturation_boost{this, "tex_saturation_boost", 0.0f, 0.0f, 1.0f, &game_group,
+    //      "increase texture saturation to match original Q2 tools"}
+#endif
 {
 }
 

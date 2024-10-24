@@ -537,21 +537,38 @@ if (texture) {
 tex.meta.averageColor = img::calculate_average(tex.pixels);
 */
 
-static qvec3b increase_saturation(const qvec3b &color)
+#if 1 // KMOD
+// add amount argument.
+static qvec3b increase_saturation(const qvec3b &color, float amount)
+#else
+// static qvec3b increase_saturation(const qvec3b &color)
+#endif
 {
     qvec3f color_float = qvec3f(color);
     color_float /= 255.0f;
 
-    // square it to boost saturation
-    color_float *= color_float;
+#if 1 // KMOD
+    // scale channels around their average intensity.
+    float average = (color_float[0] + color_float[1] + color_float[2])/3.0f;
+    color_float[0] -= average;
+    color_float[1] -= average;
+    color_float[2] -= average;
+    color_float *= amount;
+    color_float[0] += average;
+    color_float[1] += average;
+    color_float[2] += average;
+#else
+    // // square it to boost saturation
+    // color_float *= color_float;
 
-    // multiply by 2, then scale back to avoid clipping if needed
-    color_float *= 2.0f;
+    // // multiply by 2, then scale back to avoid clipping if needed
+    // color_float *= 2.0f;
 
-    float max_comp = qv::max(color_float);
-    if (max_comp > 1.0f) {
-        color_float /= max_comp;
-    }
+    // float max_comp = qv::max(color_float);
+    // if (max_comp > 1.0f) {
+    //     color_float /= max_comp;
+    // }
+#endif
 
     qvec3b color_int;
     for (int i = 0; i < 3; ++i) {
@@ -594,8 +611,12 @@ static void AddTextureName(
         tex.averageColor = img::calculate_average(tex.pixels);
 
         if (options.tex_saturation_boost.value() > 0.0f) {
-            tex.averageColor =
-                mix(tex.averageColor, increase_saturation(tex.averageColor), options.tex_saturation_boost.value());
+#if 1 // KMOD
+            tex.averageColor = increase_saturation(tex.averageColor, options.tex_saturation_boost.value());
+#else
+            // tex.averageColor =
+            //     mix(tex.averageColor, increase_saturation(tex.averageColor), options.tex_saturation_boost.value());
+#endif
         }
     }
 
@@ -669,8 +690,12 @@ static void ConvertTextures(const mbsp_t *bsp, const settings::common_settings &
             tex.averageColor = img::calculate_average(tex.pixels);
 
             if (options.tex_saturation_boost.value() > 0.0f) {
-                tex.averageColor =
-                    mix(tex.averageColor, increase_saturation(tex.averageColor), options.tex_saturation_boost.value());
+#if 1 // KMOD
+                tex.averageColor = increase_saturation(tex.averageColor, options.tex_saturation_boost.value());
+#else
+                // tex.averageColor =
+                //     mix(tex.averageColor, increase_saturation(tex.averageColor), options.tex_saturation_boost.value());
+#endif
             }
         }
 
